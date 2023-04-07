@@ -25,6 +25,7 @@
   differentiation window size that determines the average speed. This lets the
   user choose smaller values to get a more responsive (but noisier) or higher
   values to get a smoother (but more delayed) speed signal.
+- Added `hub.ble` attribute for accessing Bluetooth capabilities.
 
 ### Fixed
 - Fixed iterator for `Matrix` objects giving bad values.

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-// Copyright (c) 2022 The Pybricks Authors
+// Copyright (c) 2022-2023 The Pybricks Authors
 
 #define PYBRICKS_HUB_CLASS_NAME         (MP_QSTR_VirtualHub)
 
@@ -8,6 +8,7 @@
 
 // Pybricks modules
 #define PYBRICKS_PY_COMMON              (1)
+#define PYBRICKS_PY_COMMON_BLE          (0)
 #define PYBRICKS_PY_COMMON_CHARGER      (1)
 #define PYBRICKS_PY_COMMON_CONTROL      (1)
 #define PYBRICKS_PY_COMMON_IMU          (0)
