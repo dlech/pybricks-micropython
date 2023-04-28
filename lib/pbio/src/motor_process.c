@@ -37,8 +37,17 @@ PROCESS_THREAD(pbio_motor_process, ev, data) {
         // Update servos
         pbio_servo_update_all();
 
-        // Reset timer to wait for next update
+        // Reset timer to wait for next update. Using etimer_reset() instead
+        // of etimer_restart() makes average update period closer to the expected
+        // PBIO_CONFIG_CONTROL_LOOP_TIME_MS when occasional delays occur.
         etimer_reset(&timer);
+
+        // If we have fallen too far behind though, jump ahead to catch up.
+        // Otherwise, this process will run in a tight loop and not yield
+        // until the timer catches up.
+        if (timer_expired(&timer.timer)) {
+            etimer_restart(&timer);
+        }
     }
 
     PROCESS_END();
