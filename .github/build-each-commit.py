@@ -5,12 +5,13 @@ import argparse
 import os
 import subprocess
 
+from azure.core.credentials import AzureNamedKeyCredential
+from azure.data.tables import TableClient, UpdateMode
 import git
-
-from azure.cosmosdb.table.tableservice import TableService
 
 STORAGE_ACCOUNT = os.environ.get("STORAGE_ACCOUNT")
 STORAGE_KEY = os.environ.get("STORAGE_KEY")
+STORAGE_URL = os.environ.get("STORAGE_URL")
 FIRMWARE_SIZE_TABLE = os.environ.get("FIRMWARE_SIZE_TABLE")
 
 PYBRICKS_PATH = os.environ.get("PYBRICKS_PATH", ".")
@@ -31,7 +32,11 @@ assert not pybricks.bare, "Repository not found"
 
 # if credentials were given, connect to remote database
 if STORAGE_ACCOUNT:
-    service = TableService(STORAGE_ACCOUNT, STORAGE_KEY)
+    firmware_size_table = TableClient(
+        STORAGE_URL,
+        FIRMWARE_SIZE_TABLE,
+        credential=AzureNamedKeyCredential(STORAGE_ACCOUNT, STORAGE_KEY),
+    )
 
 # build each commit starting with the oldest
 start_commit = (
@@ -80,11 +85,11 @@ for commit in reversed(
         )
         size = os.path.getsize(bin_path)
 
-        service.insert_or_merge_entity(
-            FIRMWARE_SIZE_TABLE,
+        firmware_size_table.upsert_entity(
             {
                 "PartitionKey": "size",
                 "RowKey": commit.hexsha,
                 args.hub: size,
             },
+            UpdateMode.REPLACE,
         )
