@@ -41,6 +41,7 @@ typedef struct {
 extern const pbdrv_sound_stm32_hal_dac_platform_data_t pbdrv_sound_stm32_hal_dac_platform_data;
 
 void pbdrv_sound_stm32_hal_dac_handle_dma_irq(void);
+void pbdrv_sound_stm32_hal_dac_handle_half_complete(void);
 
 #endif // PBDRV_CONFIG_SOUND_STM32_HAL_DAC
 

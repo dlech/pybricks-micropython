@@ -386,10 +386,70 @@ static mp_obj_t pb_type_Speaker_play_notes(size_t n_args, const mp_obj_t *pos_ar
 }
 static MP_DEFINE_CONST_FUN_OBJ_KW(pb_type_Speaker_play_notes_obj, 1, pb_type_Speaker_play_notes);
 
+static volatile bool pb_type_Sound_pcm_update_requested;
+
+static void pb_type_Speaker_pcm_update(void) {
+    pb_type_Sound_pcm_update_requested = true;
+}
+
+#include <stdio.h>
+
+static bool pb_type_Speaker_play_pcm_test_completion(mp_obj_t self_in, uint32_t end_time) {
+    pb_type_Speaker_obj_t *self = MP_OBJ_TO_PTR(self_in);
+
+    if (pb_type_Sound_pcm_update_requested) {
+        pb_type_Sound_pcm_update_requested = false;
+
+        mp_buffer_info_t bufinfo;
+        mp_get_buffer_raise(self->notes_generator, &bufinfo, MP_BUFFER_READ);
+
+        uint32_t start = self->note_duration;
+        uint32_t end = start + MP_ARRAY_SIZE(waveform_data);
+
+        if (start >= bufinfo.len) {
+            printf("PCM done\n");
+            return true;
+        }
+
+        if (end > bufinfo.len) {
+            end = bufinfo.len;
+        }
+
+        memcpy(waveform_data, bufinfo.buf + start, end - start);
+        self->note_duration = end;
+        printf("PCM %lu %lu\n", start, end);
+    }
+
+    return false;
+}
+
+static mp_obj_t pb_type_Speaker_play_pcm(size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {
+    PB_PARSE_ARGS_METHOD(n_args, pos_args, kw_args,
+        pb_type_Speaker_obj_t, self,
+        PB_ARG_REQUIRED(data));
+
+    self->notes_generator = data_in;
+    self->note_duration = 0;
+
+    pbdrv_sound_set_update_callback(pb_type_Speaker_pcm_update);
+    pbdrv_sound_start(waveform_data, MP_ARRAY_SIZE(waveform_data), 8000 * MP_ARRAY_SIZE(waveform_data));
+
+    return pb_type_awaitable_await_or_wait(
+        MP_OBJ_FROM_PTR(self),
+        self->awaitables,
+        0,
+        pb_type_Speaker_play_pcm_test_completion,
+        pb_type_awaitable_return_none,
+        pb_type_Speaker_cancel,
+        PB_TYPE_AWAITABLE_OPT_CANCEL_ALL);
+}
+static MP_DEFINE_CONST_FUN_OBJ_KW(pb_type_Speaker_play_pcm_obj, 1, pb_type_Speaker_play_pcm);
+
 static const mp_rom_map_elem_t pb_type_Speaker_locals_dict_table[] = {
     { MP_ROM_QSTR(MP_QSTR_volume), MP_ROM_PTR(&pb_type_Speaker_volume_obj) },
     { MP_ROM_QSTR(MP_QSTR_beep), MP_ROM_PTR(&pb_type_Speaker_beep_obj) },
     { MP_ROM_QSTR(MP_QSTR_play_notes), MP_ROM_PTR(&pb_type_Speaker_play_notes_obj) },
+    { MP_ROM_QSTR(MP_QSTR_play_pcm), MP_ROM_PTR(&pb_type_Speaker_play_pcm_obj) },
 };
 static MP_DEFINE_CONST_DICT(pb_type_Speaker_locals_dict, pb_type_Speaker_locals_dict_table);
 

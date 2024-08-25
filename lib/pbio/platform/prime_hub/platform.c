@@ -682,6 +682,10 @@ void DMA1_Stream5_IRQHandler(void) {
     pbdrv_sound_stm32_hal_dac_handle_dma_irq();
 }
 
+void HAL_DAC_ConvHalfCpltCallbackCh1(DAC_HandleTypeDef *hdac) {
+    pbdrv_sound_stm32_hal_dac_handle_half_complete();
+}
+
 // UART
 
 const pbdrv_uart_stm32f4_ll_irq_platform_data_t

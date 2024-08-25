@@ -4,6 +4,7 @@
 // Sound driver using DAC on STM32 MCU.
 
 #include <pbdrv/config.h>
+#include <pbdrv/sound.h>
 
 #if PBDRV_CONFIG_SOUND_STM32_HAL_DAC
 
@@ -75,9 +76,12 @@ void pbdrv_sound_start(const uint16_t *data, uint32_t length, uint32_t sample_ra
     const pbdrv_sound_stm32_hal_dac_platform_data_t *pdata = &pbdrv_sound_stm32_hal_dac_platform_data;
 
     HAL_GPIO_WritePin(pdata->enable_gpio_bank, pdata->enable_gpio_pin, GPIO_PIN_SET);
+    if (pbdrv_sound_hdac.State == HAL_DAC_STATE_BUSY) {
+        HAL_DAC_Stop_DMA(&pbdrv_sound_hdac, pdata->dac_ch);
+    }
     pbdrv_sound_htim.Init.Period = pdata->tim_clock_rate / sample_rate - 1;
     HAL_TIM_Base_Init(&pbdrv_sound_htim);
-    HAL_DAC_Start_DMA(&pbdrv_sound_hdac, pdata->dac_ch, (uint32_t *)data, length, DAC_ALIGN_12B_L);
+    HAL_DAC_Start_DMA(&pbdrv_sound_hdac, pdata->dac_ch, (uint32_t *)data, length, DAC_ALIGN_8B_R);
 }
 
 void pbdrv_sound_stop(void) {
@@ -87,8 +91,20 @@ void pbdrv_sound_stop(void) {
     HAL_DAC_Stop_DMA(&pbdrv_sound_hdac, pdata->dac_ch);
 }
 
+static pbdrv_sound_update_callback_t pbdrv_sound_update_callback;
+
+void pbdrv_sound_set_update_callback(pbdrv_sound_update_callback_t callback) {
+    pbdrv_sound_update_callback = callback;
+}
+
 void pbdrv_sound_stm32_hal_dac_handle_dma_irq(void) {
     HAL_DMA_IRQHandler(&pbdrv_sound_hdma);
+}
+
+void pbdrv_sound_stm32_hal_dac_handle_half_complete(void) {
+    if (pbdrv_sound_update_callback) {
+        pbdrv_sound_update_callback();
+    }
 }
 
 #endif // PBDRV_CONFIG_SOUND_STM32_HAL_DAC

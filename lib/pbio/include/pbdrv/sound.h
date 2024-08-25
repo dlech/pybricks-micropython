@@ -31,6 +31,10 @@ void pbdrv_sound_start(const uint16_t *data, uint32_t length, uint32_t sample_ra
  */
 void pbdrv_sound_stop(void);
 
+typedef void (*pbdrv_sound_update_callback_t)(void);
+
+void pbdrv_sound_set_update_callback(pbdrv_sound_update_callback_t callback);
+
 
 #else // PBDRV_CONFIG_SOUND
 
